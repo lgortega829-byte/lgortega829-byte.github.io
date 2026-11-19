@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Zona Oscura</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    color: #0ff;
+    font-family: 'Courier New', monospace;
+    cursor: none;
+  }
+
+  body {
+    position: relative;
+  }
+
+  /* Efecto linterna que sigue el cursor */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      circle 130px at var(--x, 50%) var(--y, 50%),
+      rgba(255, 255, 200, 0.2) 0%,
+      rgba(0, 0, 0, 0.96) 80%
+    );
+    transition: background 0.05s linear;
+    z-index: 10;
+  }
+
+  /* Mensaje superior, siempre visible */
+  h1 {
+    position: absolute;
+    top: 10%;
+    width: 100%;
+    text-align: center;
+    color: #0ff;
+    text-shadow: 0 0 10px #00ffff, 0 0 20px #00cccc;
+    font-size: 1.5rem;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  /* Botón de encendido oculto */
+  #encender {
+    position: absolute;
+    background: #ff0066;
+    color: #fff;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    z-index: 1;
+    opacity: 0;             /* Invisible por defecto */
+    transition: opacity 0.3s ease;
+  }
+
+  /* El botón se revela solo cuando la linterna pasa por encima */
+  #encender.visible {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+
+  #encender:hover {
+    background: #00ffcc;
+    color: #000;
+    transform: scale(1.05);
+    box-shadow: 0 0 20px #00ffccaa;
+  }
+</style>
+</head>
+<body>
+  <h1>🔌 Parece que alguien cortó la luz...<br> encontra el botón de encendido.</h1>
+  <button id="encender">Encender</button>
+
+  <script>
+    const btn = document.getElementById('encender');
+
+    // Coloca el botón en una posición aleatoria al cargar
+    function colocarBoton() {
+      const x = Math.random() * (window.innerWidth - btn.offsetWidth);
+      const y = Math.random() * (window.innerHeight - btn.offsetHeight);
+      btn.style.left = `${x}px`;
+      btn.style.top = `${y}px`;
+    }
+    colocarBoton();
+
+    // Efecto de linterna que sigue el cursor
+    document.addEventListener('mousemove', e => {
+      document.body.style.setProperty('--x', `${e.clientX}px`);
+      document.body.style.setProperty('--y', `${e.clientY}px`);
+
+      // Detectar si el cursor está cerca del botón para "revelarlo"
+      const rect = btn.getBoundingClientRect();
+      const dentro =
+        e.clientX > rect.left - 100 &&
+        e.clientX < rect.right + 100 &&
+        e.clientY > rect.top - 100 &&
+        e.clientY < rect.bottom + 100;
+
+      if (dentro) btn.classList.add('visible');
+      else btn.classList.remove('visible');
+    });
+
+    // Sonido de encendido
+    function sonidoEncendido() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(440, ctx.currentTime);
+      o.connect(g);
+      g.connect(ctx.destination);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+      o.start();
+      o.stop(ctx.currentTime + 0.6);
+    }
+
+    // Al hacer clic en el botón, redirigir a la página original
+    btn.addEventListener('click', () => {
+      sonidoEncendido();
+      btn.textContent = "Encendiendo...";
+      setTimeout(() => {
+        window.location.href = 'error de interaccion 6.html';
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

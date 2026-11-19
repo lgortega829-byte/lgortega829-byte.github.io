@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Evento: Asteroids</title>
+<style>
+    body {
+        background: black;
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+        color: white;
+    }
+    #hud {
+        position: absolute;
+        top: 10px;
+        width: 100%;
+        text-align: center;
+        font-size: 22px;
+        text-shadow: 0 0 10px white;
+    }
+    #continueBtn {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 20px 40px;
+        font-size: 1.4rem;
+        background: #00ffff;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        display: none;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+<div id="hud">
+    Tiempo: <span id="time">30</span>s —
+    Puntos: <span id="score">0</span> —
+    Objetivo: <span id="goal">300</span>
+</div>
+<button id="continueBtn">Continuar</button>
+
+<script>
+// ============================
+// CONFIGURACIÓN GENERAL
+// ============================
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let keys = {};
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+let score = 0;
+let GOAL = 300;
+
+document.getElementById("score").textContent = score;
+document.getElementById("goal").textContent = GOAL;
+
+// ============================
+// NAVE
+// ============================
+let ship = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    angle: 0,
+    velX: 0,
+    velY: 0
+};
+
+function drawShip() {
+    ctx.save();
+    ctx.translate(ship.x, ship.y);
+    ctx.rotate(ship.angle);
+    ctx.beginPath();
+    ctx.moveTo(15, 0);
+    ctx.lineTo(-10, -10);
+    ctx.lineTo(-10, 10);
+    ctx.closePath();
+    ctx.strokeStyle = "white";
+    ctx.stroke();
+    ctx.restore();
+}
+
+// ============================
+// BALAS
+// ============================
+let bullets = [];
+
+function shoot() {
+    bullets.push({
+        x: ship.x,
+        y: ship.y,
+        dx: Math.cos(ship.angle) * 7,
+        dy: Math.sin(ship.angle) * 7,
+        life: 60
+    });
+}
+document.addEventListener("keydown", e => {
+    if (e.key === " ") shoot();
+});
+
+// ============================
+// ASTEROIDES
+// ============================
+function createAsteroid(size) {
+    const speed = size === 60 ? 1.5 :
+                  size === 40 ? 2.5 : 3.5;
+
+    return {
+        x: Math.random() < 0.5 ? 0 : canvas.width,
+        y: Math.random() * canvas.height,
+        dx: (Math.random() - 0.5) * speed,
+        dy: (Math.random() - 0.5) * speed,
+        size
+    };
+}
+
+let asteroids = [];
+for (let i = 0; i < 5; i++) asteroids.push(createAsteroid(60));
+
+// Cada 10s genera más
+setInterval(() => {
+    asteroids.push(createAsteroid(60));
+    asteroids.push(createAsteroid(40));
+}, 10000);
+
+// ============================
+// TIMER
+// ============================
+let timeLeft = 30;
+let gameEnded = false;
+
+const timer = setInterval(() => {
+    if (gameEnded) return;
+
+    timeLeft--;
+    document.getElementById("time").textContent = timeLeft;
+
+    if (timeLeft <= 0) {
+        endGame(score >= GOAL);
+    }
+}, 1000);
+
+// ============================
+// FINALIZAR JUEGO
+// ============================
+function endGame(win) {
+    gameEnded = true;
+
+    if (win) {
+        document.getElementById("continueBtn").style.display = "block";
+    } else {
+        ctx.fillStyle = "white";
+        ctx.font = "40px Arial";
+        ctx.fillText("No alcanzaste los puntos suficientes.", canvas.width/2 - 200, canvas.height/2);
+        setTimeout(() => location.reload(), 2500);
+    }
+}
+
+document.getElementById("continueBtn").addEventListener("click", () => {
+    window.location.href = "error de interaccion 6.html"; // ajusta el nombre si tu archivo principal tiene otro nombre
+});
+
+// ============================
+// BUCLE PRINCIPAL
+// ============================
+function update() {
+    if (!gameEnded) updateGame();
+    draw();
+    requestAnimationFrame(update);
+}
+
+function updateGame() {
+    // Movimiento nave
+    if (keys["ArrowLeft"]) ship.angle -= 0.07;
+    if (keys["ArrowRight"]) ship.angle += 0.07;
+    if (keys["ArrowUp"]) {
+        ship.velX += Math.cos(ship.angle) * 0.15;
+        ship.velY += Math.sin(ship.angle) * 0.15;
+    }
+
+    ship.x += ship.velX;
+    ship.y += ship.velY;
+
+    // Wrap
+    if (ship.x < 0) ship.x = canvas.width;
+    if (ship.x > canvas.width) ship.x = 0;
+    if (ship.y < 0) ship.y = canvas.height;
+    if (ship.y > canvas.height) ship.y = 0;
+
+    // Balas
+    bullets.forEach(b => {
+        b.x += b.dx;
+        b.y += b.dy;
+        b.life--;
+    });
+    bullets = bullets.filter(b => b.life > 0);
+
+    // Asteroides
+    asteroids.forEach(a => {
+        a.x += a.dx;
+        a.y += a.dy;
+
+        if (a.x < -a.size) a.x = canvas.width + a.size;
+        if (a.x > canvas.width + a.size) a.x = -a.size;
+        if (a.y < -a.size) a.y = canvas.height + a.size;
+        if (a.y > canvas.height + a.size) a.y = -a.size;
+    });
+
+    // Colisión nave
+    asteroids.forEach(a => {
+        const d = Math.hypot(ship.x - a.x, ship.y - a.y);
+        if (d < a.size) {
+            endGame(false);
+        }
+    });
+
+    // Colisión bala - asteroide
+    bullets.forEach((b, bi) => {
+        asteroids.forEach((a, ai) => {
+            const d = Math.hypot(b.x - a.x, b.y - a.y);
+            if (d < a.size) {
+
+                // asignar puntos según tamaño
+                score += a.size === 60 ? 20 :
+                         a.size === 40 ? 40 : 60;
+
+                document.getElementById("score").textContent = score;
+
+                bullets.splice(bi, 1);
+                asteroids.splice(ai, 1);
+
+                // romper asteroide
+                if (a.size > 20) {
+                    asteroids.push(createAsteroid(a.size - 20));
+                    asteroids.push(createAsteroid(a.size - 20));
+                }
+            }
+        });
+    });
+}
+
+// ============================
+// DIBUJO
+// ============================
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!gameEnded) drawShip();
+
+    // Balas
+    ctx.fillStyle = "white";
+    bullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 4));
+
+    // Asteroides
+    ctx.strokeStyle = "white";
+    asteroids.forEach(a => {
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, a.size, 0, Math.PI * 2);
+        ctx.stroke();
+    });
+}
+
+update();
+</script>
+</body>
+</html>

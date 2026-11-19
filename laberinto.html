@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Laberinto</title>
+<style>
+  body {
+    background: #000;
+    color: #00ffff;
+    font-family: "Courier New", monospace;
+    text-align: center;
+    overflow: hidden;
+  }
+  #laberinto {
+    position: relative;
+    width: 600px;
+    height: 400px;
+    margin: 60px auto;
+    background: #001010;
+    border: 2px solid #00ffff;
+    box-shadow: 0 0 20px #00ffff55;
+  }
+  .pared {
+    position: absolute;
+    background: #00ffff;
+    box-shadow: 0 0 10px #00ffff;
+  }
+  #inicio, #fin {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+  }
+  #inicio { background: #0f0; left: 10px; top: 180px; }
+  #fin { background: #ff0066; right: 10px; top: 180px; }
+</style>
+</head>
+<body>
+<h1>Navega el laberinto sin tocar las paredes</h1>
+<div id="laberinto">
+  <div class="pared" style="top:0; left:100px; width:20px; height:200px;"></div>
+  <div class="pared" style="top:200px; left:200px; width:20px; height:200px;"></div>
+  <div class="pared" style="top:0; left:300px; width:20px; height:200px;"></div>
+  <div class="pared" style="top:200px; left:400px; width:20px; height:200px;"></div>
+  <div id="inicio"></div>
+  <div id="fin"></div>
+</div>
+<script>
+const fin = document.getElementById("fin");
+const paredes = document.querySelectorAll(".pared");
+let dentro = false;
+
+document.getElementById("inicio").addEventListener("mouseenter", () => {
+  dentro = true;
+  document.body.style.background = "#001a1a";
+});
+
+paredes.forEach(p => {
+  p.addEventListener("mouseenter", () => {
+    if (dentro) {
+      dentro = false;
+      document.body.style.background = "#220000";
+      alert("⚠️ Has tocado una pared. Inténtalo de nuevo.");
+      location.reload();
+    }
+  });
+});
+
+fin.addEventListener("mouseenter", () => {
+  if (dentro) {
+    alert("¡Felicidades, completaste el laberinto!");
+    window.location.href = "error de interaccion 6.html";
+  }
+});
+</script>
+</body>
+</html>

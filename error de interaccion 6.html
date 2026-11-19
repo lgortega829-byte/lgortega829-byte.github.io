@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Interfaz Rota</title>
+<style>
+  body {
+    background: #0b0b0b;
+    color: #00ffff;
+    font-family: "Courier New", monospace;
+    text-align: center;
+    padding-top: 100px;
+    overflow: hidden;
+  }
+
+  h1 {
+    text-shadow: 0 0 10px #00ffff;
+  }
+
+  button {
+    background: #00ffff;
+    color: #000;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px #00ffff88;
+  }
+
+  button:hover {
+    background: #00cccc;
+    box-shadow: 0 0 20px #00cccc;
+  }
+
+  #error {
+    color: #ff3366;
+    text-shadow: 0 0 10px #ff3366;
+    margin-top: 30px;
+    font-weight: bold;
+    min-height: 40px;
+  }
+
+  #loadingBarContainer {
+    width: 300px;
+    height: 20px;
+    background: #003333;
+    border-radius: 10px;
+    margin: 40px auto;
+    overflow: hidden;
+    display: none;
+  }
+
+  #loadingBar {
+    width: 0%;
+    height: 100%;
+    background: #00ffff;
+    transition: width 0.1s linear;
+  }
+
+  .shake {
+    animation: shake 0.3s;
+  }
+
+  @keyframes shake {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(5px, -5px); }
+    50% { transform: translate(-5px, 5px); }
+    75% { transform: translate(5px, 5px); }
+    100% { transform: translate(0, 0); }
+  }
+</style>
+</head>
+<body>
+  <h1>¡Bienvenido!</h1>
+  <button id="continuarBtn">Continuar</button>  
+  <div id="error"></div>
+  <div id="loadingBarContainer">
+    <div id="loadingBar"></div>
+  </div>
+
+<script>
+
+// 🧭 Control de sesión
+if (!sessionStorage.getItem("inSession")) {
+  localStorage.removeItem("clickCount");
+  localStorage.removeItem("errorCount");
+  sessionStorage.setItem("inSession", "true");
+}
+
+let clickCount = parseInt(localStorage.getItem("clickCount")) || 0;
+let errorCount = parseInt(localStorage.getItem("errorCount")) || 0;
+let botonRoto = false;
+let ultimoEvento = null;
+
+const boton = document.getElementById('continuarBtn');
+const errorDiv = document.getElementById('error');
+const barContainer = document.getElementById('loadingBarContainer');
+const bar = document.getElementById('loadingBar');
+
+function playBeep(freq = 220, dur = 0.2) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'square';
+  osc.frequency.value = freq;
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  gain.gain.setValueAtTime(0.1, ctx.currentTime);
+  osc.start();
+  osc.stop(ctx.currentTime + dur);
+}
+
+// --- EVENTO PRINCIPAL ---
+boton.addEventListener('click', () => {
+  if (botonRoto) return;
+
+  clickCount++;
+  localStorage.setItem("clickCount", clickCount);
+
+  const probRomper = clickCount > 20 ? Math.min(0.02 * (clickCount - 20), 0.3) : 0;
+  const rand = Math.random();
+
+  // --- Evento de ruptura del botón ---
+  if (clickCount > 20 && rand < probRomper && ultimoEvento !== "romper") {
+    ultimoEvento = "romper";
+    romperBoton();
+    return;
+  }
+
+  // --- Evento de los 3 botones ---
+  if (rand >= 0.2 && rand < 0.45 && ultimoEvento !== "tresBotones") {
+    ultimoEvento = "tresBotones";
+    eventoTresBotones();
+    return;
+  }
+
+  // --- Evento de snake ---
+if (rand >= 0.35 && rand < 0.55 && ultimoEvento !== "snake") {
+  ultimoEvento = "snake";
+  setTimeout(() => window.location.href = "snake.html", 1000);
+  return;
+}
+
+// --- Evento de asteroids ---
+if (rand >= 0.2 && rand < 0.55 && ultimoEvento !== "asteroids") {
+  ultimoEvento = "asteroids";
+  setTimeout(() => window.location.href = "asteroids.html", 1000);
+  return;
+}
+
+
+  // --- Evento de laberinto ---
+  if (rand >= 0.2 && rand < 0.32 && ultimoEvento !== "laberinto") {
+    ultimoEvento = "laberinto";
+    setTimeout(() => window.location.href = "laberinto.html", 1000);
+    return;
+  }
+
+  // --- Evento Frogger ---
+  if (rand >= 0.2 && rand < 0.60 && ultimoEvento !== "frogger") {
+    ultimoEvento = "frogger";
+    errorDiv.innerHTML = `
+      🐸 Parece que una rana necesita cruzar la carretera antes de continuar.<br>
+      Prepárate para ayudarla.
+    `;
+    setTimeout(() => window.location.href = "frogger.html", 1500);
+    return;
+  }
+
+  // --- Evento de premio ---
+  if (rand < 0.05) {
+    window.location.href = "premio.html";
+    return;
+  }
+
+  // --- Eventos menores ---
+  if (rand < 0.7) {
+    lanzarError();
+  } else {
+    barraCarga();
+  }
+});
+
+// --- FUNCIONES ---
+function lanzarError() {
+  errorCount++;
+  localStorage.setItem("errorCount", errorCount);
+  playBeep(180, 0.2);
+  boton.classList.add("shake");
+  errorDiv.innerHTML = `
+    ⚠️ Error: no se ha detectado ningún clic.<br>
+    <span style="color:#ff99aa;">Errores acumulados: ${errorCount}</span>
+  `;
+  if (Math.random() < 0.46) {
+    setTimeout(() => window.location.href = "error-linterna.html", 1200);
+    return;
+  }
+  setTimeout(() => {
+    boton.classList.remove("shake");
+    moverBoton();
+  }, 1000);
+}
+
+function moverBoton() {
+  const maxX = window.innerWidth - boton.offsetWidth - 20;
+  const maxY = window.innerHeight - boton.offsetHeight - 20;
+  boton.style.position = "absolute";
+  boton.style.left = Math.random() * maxX + "px";
+  boton.style.top = Math.random() * maxY + "px";
+}
+
+function barraCarga() {
+  errorDiv.textContent = "";
+  barContainer.style.display = "block";
+  bar.style.width = "0%";
+  let progress = 0;
+  boton.disabled = true;
+  const interval = setInterval(() => {
+    progress += Math.random() * 5;
+    if (progress >= 99) {
+      clearInterval(interval);
+      progress = 99;
+      errorCount++;
+      localStorage.setItem("errorCount", errorCount);
+      errorDiv.innerHTML = `
+        ❌ Error: no se puede redirigir hasta que hagas clic en el botón.<br>
+        <span style="color:#ff99aa;">Errores acumulados: ${errorCount}</span>
+      `;
+      setTimeout(() => {
+        barContainer.style.display = "none";
+        bar.style.width = "0%";
+        boton.disabled = false;
+        errorDiv.innerHTML = "";
+      }, 2000);
+    }
+    bar.style.width = progress + "%";
+  }, 100);
+}
+
+// --- BOTÓN ROTO ---
+function romperBoton() {
+  botonRoto = true;
+  boton.style.display = 'none';
+
+  errorCount++;
+  localStorage.setItem("errorCount", errorCount);
+
+  playBeep(100, 0.35);
+  errorDiv.innerHTML = `
+    <h2 style="color:#ff6699; text-shadow:0 0 10px #ff6699;">
+      💥 El botón se ha roto...<br>
+      Has hecho tantos clics que la interfaz colapsó.<br>
+      <span style="color:#ff99aa;">Rearma la palabra para continuar.</span><br>
+      <small>Errores acumulados: ${errorCount}</small>
+    </h2>
+  `;
+
+  const zonaGuia = document.createElement('div');
+  Object.assign(zonaGuia.style, {
+    position: 'absolute',
+    left: '50%',
+    top: '60%',
+    transform: 'translate(-50%, -50%)',
+    width: '500px',
+    height: '100px',
+    border: '2px dashed rgba(0,255,255,0.25)',
+    borderRadius: '16px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    pointerEvents: 'none',
+    zIndex: 1000
+  });
+  zonaGuia.innerHTML = `<span style="color:rgba(0,255,255,0.12); font-size:1.3rem; letter-spacing:10px;">C O N T I N U A R</span>`;
+  document.body.appendChild(zonaGuia);
+
+  const piezasContainer = document.createElement('div');
+  Object.assign(piezasContainer.style, { position: 'fixed', inset: 0, zIndex: 1100 });
+  document.body.appendChild(piezasContainer);
+
+  const palabra = 'CONTINUAR';
+  const letras = palabra.split('');
+  const guiaRect = zonaGuia.getBoundingClientRect();
+  const guiaCenterY = guiaRect.top + window.scrollY + guiaRect.height / 2;
+  const totalAncho = letras.length * 40 + (letras.length - 1) * 10;
+  const inicioX = guiaRect.left + window.scrollX + (guiaRect.width - totalAncho) / 2;
+
+  const posicionesMeta = letras.map((letra, i) => ({ letra, x: inicioX + i * 50 + 20, y: guiaCenterY }));
+
+  const piezas = [];
+  letras.forEach((letra) => {
+    const span = document.createElement('div');
+    span.textContent = letra;
+    Object.assign(span.style, {
+      position: 'absolute',
+      fontSize: '2.4rem',
+      fontWeight: '700',
+      color: '#00ffff',
+      left: `${Math.random() * (window.innerWidth - 100)}px`,
+      top: `${100 + Math.random() * (window.innerHeight - 220)}px`,
+      cursor: 'grab',
+      userSelect: 'none',
+      textAlign: 'center',
+      transition: 'transform 120ms, color 120ms',
+      zIndex: 1200
+    });
+    span.dataset.letra = letra;
+    piezasContainer.appendChild(span);
+    piezas.push(span);
+  });
+
+  const styleTag = document.createElement('style');
+  styleTag.textContent = `
+    .pieza-snapped { color: #0f0 !important; transform: scale(1) !important; }
+    .pieza-near  { transform: scale(1.12); filter: drop-shadow(0 0 6px rgba(0,255,255,0.3)); }
+  `;
+  document.head.appendChild(styleTag);
+
+  let piezaActiva = null, offsetX = 0, offsetY = 0;
+
+  piezas.forEach(pieza => {
+    pieza.addEventListener('mousedown', e => {
+      piezaActiva = pieza;
+      offsetX = e.clientX - pieza.offsetLeft;
+      offsetY = e.clientY - pieza.offsetTop;
+      pieza.style.cursor = 'grabbing';
+      playBeep(350, 0.05);
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!piezaActiva) return;
+      piezaActiva.style.cursor = 'grab';
+      const rect = piezaActiva.getBoundingClientRect();
+      const piezaX = rect.left + rect.width / 2 + window.scrollX;
+      const piezaY = rect.top + rect.height / 2 + window.scrollY;
+      const tolerancia = 60;
+      const metas = posicionesMeta.filter(m => m.letra === piezaActiva.dataset.letra);
+      const meta = metas.find(m => Math.abs(piezaX - m.x) < tolerancia && Math.abs(piezaY - m.y) < tolerancia);
+
+      if (meta) {
+        piezaActiva.classList.add('pieza-snapped');
+        piezaActiva.classList.remove('pieza-near');
+        piezaActiva.style.left = `${meta.x - rect.width / 2}px`;
+        piezaActiva.style.top = `${meta.y - rect.height / 2}px`;
+        playBeep(720, 0.06);
+      } else {
+        piezaActiva.classList.remove('pieza-near');
+      }
+
+      piezaActiva = null;
+      verificarReconstruccion();
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!piezaActiva) return;
+      const x = e.clientX - offsetX;
+      const y = e.clientY - offsetY;
+      piezaActiva.style.left = `${x}px`;
+      piezaActiva.style.top = `${y}px`;
+      const metas = posicionesMeta.filter(m => m.letra === piezaActiva.dataset.letra);
+      const rect = piezaActiva.getBoundingClientRect();
+      const piezaX = rect.left + rect.width / 2 + window.scrollX;
+      const piezaY = rect.top + rect.height / 2 + window.scrollY;
+      const tolerancia = 60;
+      const meta = metas.find(m => Math.abs(piezaX - m.x) < tolerancia && Math.abs(piezaY - m.y) < tolerancia);
+      if (meta) piezaActiva.classList.add('pieza-near'); else piezaActiva.classList.remove('pieza-near');
+    });
+  });
+
+  function verificarReconstruccion() {
+    const completadas = piezas.filter(p => p.classList.contains('pieza-snapped')).length;
+    if (completadas === piezas.length) setTimeout(reconstruirBoton, 500);
+  }
+
+  function reconstruirBoton() {
+    piezasContainer.remove();
+    zonaGuia.remove();
+    errorDiv.innerHTML = `
+      <h2 style="color:#0f0; text-shadow:0 0 15px #0f0;">
+        🔧 ¡Botón reparado exitosamente!<br>
+        <span style="color:#ff99aa;">Errores acumulados: ${errorCount}</span>
+      </h2>`;
+    playBeep(600, 0.2);
+    boton.style.display = 'inline-block';
+    botonRoto = false;
+    setTimeout(() => (errorDiv.textContent = ""), 1500);
+  }
+}
+
+// --- EVENTO DE 3 BOTONES ---
+function eventoTresBotones() {
+  boton.style.display = "none";
+  errorDiv.innerHTML = `
+    ⚠️ Error: se han generado múltiples botones de continuar.<br>
+    Elige sabiamente el correcto para poder seguir...<br>
+    <span style="color:#ff99aa;">Errores acumulados: ${errorCount}</span>
+  `;
+
+  const contenedor = document.createElement("div");
+  Object.assign(contenedor.style, { display: "flex", justifyContent: "center", gap: "40px", marginTop: "40px" });
+
+  const correcto = Math.floor(Math.random() * 3);
+  for (let i = 0; i < 3; i++) {
+    const b = document.createElement("button");
+    b.textContent = "Continuar";
+    b.style.padding = "15px 40px";
+    b.addEventListener("click", () => {
+      if (i === correcto) {
+        playBeep(600, 0.2);
+        contenedor.remove();
+        errorDiv.innerHTML = `
+          ✅ Has elegido el botón correcto.<br>
+          <span style="color:#ff99aa;">Errores acumulados: ${errorCount}</span>
+        `;
+        setTimeout(() => { boton.style.display = "inline-block"; errorDiv.textContent = ""; ultimoEvento = null; }, 1500);
+      } else {
+        errorDiv.innerHTML = `
+          🚨 ¡Has presionado el botón incorrecto!<br>
+          ⚠️ Parece que has iniciado una invasión extraterrestre...
+        `;
+        setTimeout(() => { window.location.href = "space-invaders.html"; }, 2000);
+      }
+    });
+    contenedor.appendChild(b);
+  }
+
+  document.body.appendChild(contenedor);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake - Evento</title>
+<style>
+  body {
+    background: #0b0b0b;
+    color: #00ffff;
+    font-family: "Courier New", monospace;
+    text-align: center;
+    margin: 0;
+    overflow: hidden;
+  }
+  h1 {
+    text-shadow: 0 0 10px #00ffff;
+    margin-top: 10px;
+  }
+  canvas {
+    background: #111;
+    display: block;
+    margin: 10px auto;
+    border: 3px solid #00ffff;
+  }
+  #continueBtn {
+    display: none;
+    padding: 12px 30px;
+    font-size: 1.2rem;
+    background: #00ffff;
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 0 12px #00ffff88;
+  }
+</style>
+</head>
+<body>
+
+<h1>La serpiente debe recolectar las letras de "CONTINUAR"</h1>
+<canvas id="game" width="400" height="400"></canvas>
+<button id="continueBtn">Continuar</button>
+
+<script>
+// --- CONFIGURACIÓN ---
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const tile = 20;
+let snake = [{ x: 200, y: 200 }];
+let dir = { x: 0, y: 0 };
+let speed = 150;         // ms por paso
+let lastMove = 0;
+
+// Letras en orden correcto
+const targetWord = "CONTINUAR".split("");
+let nextLetterIndex = 0;
+
+let letters = [];
+
+// Utility: posiciones en la cuadrícula
+function randomPos() {
+  return Math.floor(Math.random() * (canvas.width / tile)) * tile;
+}
+
+function spawnLetter(char) {
+  // Genera una posición que no choque con la serpiente inicial
+  let x, y, attempts = 0;
+  do {
+    x = randomPos();
+    y = randomPos();
+    attempts++;
+    // si tras muchos intentos aceptamos cualquier posición
+    if (attempts > 100) break;
+  } while (snake.some(s => s.x === x && s.y === y));
+  return { x, y, char };
+}
+
+// --- Generar letras iniciales ---
+function initLetters() {
+  letters = [];
+  for (let c of targetWord) {
+    letters.push(spawnLetter(c));
+  }
+}
+initLetters();
+
+// --- MOVIMIENTO ---
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowUp" && dir.y === 0) dir = { x: 0, y: -tile };
+  if (e.key === "ArrowDown" && dir.y === 0) dir = { x: 0, y: tile };
+  if (e.key === "ArrowLeft" && dir.x === 0) dir = { x: -tile, y: 0 };
+  if (e.key === "ArrowRight" && dir.x === 0) dir = { x: tile, y: 0 };
+});
+
+// --- REINICIAR ---
+function resetGame() {
+  snake = [{ x: 200, y: 200 }];
+  dir = { x: 0, y: 0 };
+  nextLetterIndex = 0;
+  initLetters();
+  lastMove = performance.now(); // evita que mueva inmediatamente después del reset
+  document.getElementById("continueBtn").style.display = "none";
+}
+
+// --- DIBUJAR ---
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Fondo y guía
+  ctx.fillStyle = "#001"; 
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Serpiente
+  ctx.fillStyle = "#00ffff";
+  snake.forEach(seg => ctx.fillRect(seg.x, seg.y, tile, tile));
+
+  // Letras
+  ctx.fillStyle = "#ff66aa";
+  ctx.font = "16px Courier New";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  letters.forEach(l => {
+    ctx.fillText(l.char, l.x + tile/2, l.y + tile/2);
+  });
+
+  // Indicador de qué letra sigue
+  ctx.fillStyle = "#00ffff";
+  ctx.font = "14px Courier New";
+  ctx.textAlign = "left";
+  ctx.fillText("Siguiente letra: " + (targetWord[nextLetterIndex] || "-"), 8, canvas.height - 8);
+}
+
+// --- UPDATE ---
+function update(timestamp) {
+  if (!lastMove) lastMove = timestamp;
+  if (timestamp - lastMove > speed) {
+    lastMove = timestamp;
+
+    // calcular nueva cabeza
+    const head = {
+      x: snake[0].x + dir.x,
+      y: snake[0].y + dir.y
+    };
+
+    // si no hay movimiento (dir.x/y === 0), no avanzamos
+    if (dir.x === 0 && dir.y === 0) {
+      draw();
+      return requestAnimationFrame(update);
+    }
+
+    // Colisiones con bordes
+    if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+      alert("¡La serpiente chocó contra el borde! Inténtalo de nuevo.");
+      resetGame();
+      return requestAnimationFrame(update);
+    }
+
+    // Colisiones consigo misma (antes de 'unshift')
+    for (let i = 0; i < snake.length; i++) {
+      if (head.x === snake[i].x && head.y === snake[i].y) {
+        alert("¡La serpiente se mordió a sí misma! Reiniciando...");
+        resetGame();
+        return requestAnimationFrame(update);
+      }
+    }
+
+    // añadimos la nueva cabeza
+    snake.unshift(head);
+
+    // Revisar si comió una letra
+    const collisionIndex = letters.findIndex(l => l.x === head.x && l.y === head.y);
+    if (collisionIndex !== -1) {
+      const eaten = letters[collisionIndex];
+      if (eaten.char === targetWord[nextLetterIndex]) {
+        // letra correcta: avanzamos en la palabra y eliminamos esa letra
+        nextLetterIndex++;
+        letters.splice(collisionIndex, 1);
+        // si todas las letras fueron recogidas -> mostrar botón continuar
+        if (nextLetterIndex >= targetWord.length) {
+          document.getElementById("continueBtn").style.display = "inline-block";
+        }
+        // NOTE: no 'pop' para que la serpiente crezca cuando come correctamente
+      } else {
+        // letra incorrecta -> reinicio
+        alert("¡Esa no es la letra correcta! Reiniciando...");
+        resetGame();
+        return requestAnimationFrame(update);
+      }
+    } else {
+      // no comió nada -> movimiento normal (se borra la cola)
+      snake.pop();
+    }
+  }
+
+  draw();
+  requestAnimationFrame(update);
+}
+
+// iniciar loop
+requestAnimationFrame(update);
+
+// --- REDIRIGIR ---
+document.getElementById("continueBtn").addEventListener("click", () => {
+  // ajusta el nombre del archivo principal si es distinto (interfaz.html / index.html)
+  window.location.href = "error de interaccion 6.html";
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frogger Challenge</title>
+<style>
+  body {
+    background: #0b0b0b;
+    color: #00ffff;
+    font-family: "Courier New", monospace;
+    margin: 0;
+    overflow: hidden;
+    text-align: center;
+  }
+  h1 {
+    text-shadow: 0 0 10px #00ffff;
+    margin-top: 20px;
+  }
+  #gameCanvas {
+    background: #111;
+    display: block;
+    margin: 20px auto;
+    border: 3px solid #00ffff;
+  }
+  #continueBtn {
+    display: none;
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    background: #00ffff;
+    border: none;
+    color: #000;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 0 15px #00ffff88;
+    margin-top: 20px;
+  }
+  #continueBtn:hover {
+    background: #00cccc;
+    box-shadow: 0 0 20px #00cccc;
+  }
+</style>
+</head>
+<body>
+<h1>Parece que una rana necesita cruzar la carretera antes de continuar</h1>
+<canvas id="gameCanvas" width="600" height="400"></canvas>
+<button id="continueBtn">Continuar</button>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Aumentamos la velocidad de la rana
+const frog = { x: 280, y: 360, width: 40, height: 40, speed: 40 };
+const lanes = [50, 120, 190, 260];
+const cars = [];
+const carSpeed = [2, 3, 2.5, 3.2];
+let gameOver = false;
+let gameWin = false;
+
+// Crear carros
+lanes.forEach((laneY, i) => {
+  for(let j=0; j<3; j++) {
+    cars.push({ x: j*200, y: laneY, width: 60, height: 40, speed: carSpeed[i] });
+  }
+});
+
+// Dibujar elementos
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Meta
+  ctx.fillStyle = "#00ff00";
+  ctx.fillRect(0,0,canvas.width,40);
+  // Rana
+  ctx.fillStyle = "#00ffff";
+  ctx.fillRect(frog.x, frog.y, frog.width, frog.height);
+  // Carros
+  ctx.fillStyle = "#ff0000";
+  cars.forEach(car => {
+    ctx.fillRect(car.x, car.y, car.width, car.height);
+  });
+}
+
+// Mover carros
+function update() {
+  if(gameOver || gameWin) return;
+
+  cars.forEach(car => {
+    car.x += car.speed;
+    if(car.x > canvas.width) car.x = -car.width;
+
+    // Colisión con la rana
+    if(frog.x < car.x + car.width && frog.x + frog.width > car.x &&
+       frog.y < car.y + car.height && frog.y + frog.height > car.y) {
+      gameOver = true;
+      alert("¡Has sido atropellado! Reintenta cruzar la carretera.");
+      resetFrog();
+      gameOver = false;
+    }
+  });
+
+  // Verificar victoria
+  if(frog.y <= 40 && !gameWin) {
+    gameWin = true;
+    document.getElementById('continueBtn').style.display = 'inline-block';
+  }
+}
+
+// Reset rana al inicio
+function resetFrog() {
+  frog.x = 280;
+  frog.y = 360;
+}
+
+// Teclas de movimiento
+document.addEventListener('keydown', e => {
+  if(gameOver || gameWin) return;
+  if(e.key === 'ArrowUp' && frog.y - frog.speed >= 0) frog.y -= frog.speed;
+  if(e.key === 'ArrowDown' && frog.y + frog.speed + frog.height <= canvas.height) frog.y += frog.speed;
+  if(e.key === 'ArrowLeft' && frog.x - frog.speed >= 0) frog.x -= frog.speed;
+  if(e.key === 'ArrowRight' && frog.x + frog.speed + frog.width <= canvas.width) frog.x += frog.speed;
+});
+
+// Botón de continuar
+document.getElementById('continueBtn').addEventListener('click', () => {
+  window.location.href = "error de interaccion 6.html";
+});
+
+// Loop del juego
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+gameLoop();
+</script>
+</body>
+</html>

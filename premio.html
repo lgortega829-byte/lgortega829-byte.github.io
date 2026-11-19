@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tu Premio</title>
+  <style>
+    body {
+      background: radial-gradient(circle at center, #0f0f0f 0%, #000 100%);
+      color: #00ffcc;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      text-shadow: 0 0 8px #00ffcc;
+    }
+
+    p {
+      max-width: 500px;
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+
+    button {
+      background: #00ffcc;
+      color: #111;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 15px #00ffcc66;
+    }
+
+    button:hover {
+      background: #ff0066;
+      color: #fff;
+      box-shadow: 0 0 20px #ff006666;
+      transform: scale(1.05);
+    }
+
+    .glow {
+      animation: glow 2s infinite alternate;
+    }
+
+    @keyframes glow {
+      from { text-shadow: 0 0 10px #00ffcc; }
+      to { text-shadow: 0 0 25px #ff0066; }
+    }
+  </style>
+</head>
+<body>
+  <h1 class="glow">🎉 ¡Felicidades!</h1>
+  <p>
+    Has sido seleccionado entre miles de usuarios por tu perseverancia.<br>
+    Solo un clic más te separa de tu premio definitivo.
+  </p>
+  <button id="premioBtn">Recibir mi premio</button>
+
+  <script>
+    const btn = document.getElementById("premioBtn");
+
+    btn.addEventListener("click", () => {
+      btn.textContent = "Procesando...";
+
+      // ⭐ Desbloquear el menú principal permanentemente
+      localStorage.setItem("unlockedMenu", "true");
+
+      // ⭐ Borrar solo estados temporales
+      sessionStorage.clear();
+      localStorage.removeItem("clickCount");
+      localStorage.removeItem("errorCount");
+      localStorage.removeItem("ultimoEvento");
+
+      // No borrar unlockedMenu, debe permanecer
+
+      setTimeout(() => {
+        window.location.href = "index.html";
+      }, 2000);
+    });
+  </script>
+</body>
+</html>

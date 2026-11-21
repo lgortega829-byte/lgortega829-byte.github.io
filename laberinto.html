@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
 <title>Laberinto</title>
 <style>
@@ -33,10 +34,21 @@
   }
   #inicio { background: #0f0; left: 10px; top: 180px; }
   #fin { background: #ff0066; right: 10px; top: 180px; }
+
+/* Adaptación móvil */
+*{box-sizing:border-box}html{width:100%;min-height:100%;}body{max-width:100%;}button{touch-action:manipulation;min-height:46px}canvas{max-width:calc(100vw - 20px);height:auto;touch-action:none}h1{font-size:clamp(1.05rem,4.8vw,2rem);padding:0 10px;line-height:1.3}.mobile-controls{display:none;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin:8px auto 14px;max-width:480px;user-select:none}.mobile-controls button{min-width:64px;min-height:56px;background:#07363b;border:2px solid #00ffff;color:#00ffff;border-radius:12px;font-size:1.3rem;font-weight:bold;touch-action:none;-webkit-user-select:none;user-select:none}.mobile-controls button:active{background:#00ffff;color:#000}.dpad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,56px);gap:6px;justify-content:center}.dpad [data-key="ArrowUp"]{grid-column:2;grid-row:1}.dpad [data-key="ArrowLeft"]{grid-column:1;grid-row:2}.dpad [data-key="ArrowDown"]{grid-column:2;grid-row:2}.dpad [data-key="ArrowRight"]{grid-column:3;grid-row:2}
+@media(hover:none),(pointer:coarse){.mobile-controls{display:flex}}
+@media(max-width:650px){body{overflow-x:hidden!important;overflow-y:auto!important}#gameCanvas,canvas#game{display:block;margin:8px auto!important}#continueBtn{max-width:calc(100vw - 24px)}.mobile-controls{display:flex}h1{margin:8px 0!important}}
+
+  #laberinto{transform-origin:top left;touch-action:none;margin:22px auto}
+  #laberinto .pared,#inicio,#fin{pointer-events:none}
+  #status{min-height:24px;padding:0 12px}
+  @media(max-width:650px){body{margin:0}#laberinto{margin-top:12px}h1{margin:12px 0}#status{font-size:.85rem}}
 </style>
 </head>
 <body>
 <h1>Navega el laberinto sin tocar las paredes</h1>
+<p id="status">Empieza en el cuadro verde y arrastra hasta el rosa sin tocar las paredes.</p>
 <div id="laberinto">
   <div class="pared" style="top:0; left:100px; width:20px; height:200px;"></div>
   <div class="pared" style="top:200px; left:200px; width:20px; height:200px;"></div>
@@ -46,32 +58,34 @@
   <div id="fin"></div>
 </div>
 <script>
-const fin = document.getElementById("fin");
-const paredes = document.querySelectorAll(".pared");
-let dentro = false;
-
-document.getElementById("inicio").addEventListener("mouseenter", () => {
-  dentro = true;
-  document.body.style.background = "#001a1a";
+const lab = document.getElementById('laberinto');
+const inicio = document.getElementById('inicio');
+const fin = document.getElementById('fin');
+const paredes = [...document.querySelectorAll('.pared')];
+const status = document.getElementById('status');
+let activo = false, terminado = false, pointerId = null;
+function escala(){const w=Math.min(600,window.innerWidth-20);const scale=w/600;lab.style.transform=`scale(${scale})`;lab.style.marginLeft=`${Math.max(0,(window.innerWidth-w)/2)}px`;lab.style.marginRight='0';lab.style.left='0';lab.style.marginBottom=`${400*scale-400+24}px`;}
+window.addEventListener('resize',escala);escala();
+function rectHit(x,y,r){return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom}
+function fallo(){activo=false;pointerId=null;document.body.style.background='#220000';status.textContent='⚠️ Tocaste una pared. Vuelve al cuadro verde para reintentar.';}
+function mover(e){
+ if(!activo||e.pointerId!==pointerId||terminado)return;
+ e.preventDefault();
+ if(!rectHit(e.clientX,e.clientY,lab.getBoundingClientRect()))return fallo();
+ if(paredes.some(p=>rectHit(e.clientX,e.clientY,p.getBoundingClientRect())))return fallo();
+ if(rectHit(e.clientX,e.clientY,fin.getBoundingClientRect())){
+   terminado=true;activo=false;status.textContent='¡Felicidades, completaste el laberinto!';
+   setTimeout(()=>location.href='error de interaccion 6.html',900);
+ }
+}
+lab.addEventListener('pointerdown',e=>{
+ if(terminado||!rectHit(e.clientX,e.clientY,inicio.getBoundingClientRect()))return;
+ e.preventDefault();activo=true;pointerId=e.pointerId;document.body.style.background='#001a1a';status.textContent='¡Sigue el camino!';
+ try{lab.setPointerCapture(e.pointerId)}catch(_){}
 });
-
-paredes.forEach(p => {
-  p.addEventListener("mouseenter", () => {
-    if (dentro) {
-      dentro = false;
-      document.body.style.background = "#220000";
-      alert("⚠️ Has tocado una pared. Inténtalo de nuevo.");
-      location.reload();
-    }
-  });
-});
-
-fin.addEventListener("mouseenter", () => {
-  if (dentro) {
-    alert("¡Felicidades, completaste el laberinto!");
-    window.location.href = "error de interaccion 6.html";
-  }
-});
+lab.addEventListener('pointermove',mover);
+lab.addEventListener('pointerup',e=>{if(e.pointerId===pointerId){mover(e);activo=false;pointerId=null;}});
+lab.addEventListener('pointercancel',()=>{activo=false;pointerId=null;});
 </script>
 </body>
 </html>

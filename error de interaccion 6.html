@@ -5,13 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Interfaz Rota</title>
 <style>
+  * { box-sizing: border-box; }
+
+  html, body { min-height: 100%; }
+
   body {
     background: #0b0b0b;
     color: #00ffff;
     font-family: "Courier New", monospace;
     text-align: center;
-    padding-top: 100px;
-    overflow: hidden;
+    padding: clamp(32px, 12vh, 100px) 16px 24px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    min-height: 100vh;
+    min-height: 100svh;
+    position: relative;
   }
 
   h1 {
@@ -22,9 +30,12 @@
     background: #00ffff;
     color: #000;
     border: none;
-    padding: 15px 40px;
+    padding: 15px 32px;
+    min-height: 48px;
+    max-width: 100%;
     border-radius: 10px;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
+    touch-action: manipulation;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 0 15px #00ffff88;
@@ -44,7 +55,7 @@
   }
 
   #loadingBarContainer {
-    width: 300px;
+    width: min(300px, calc(100vw - 40px));
     height: 20px;
     background: #003333;
     border-radius: 10px;
@@ -70,6 +81,16 @@
     50% { transform: translate(-5px, 5px); }
     75% { transform: translate(5px, 5px); }
     100% { transform: translate(0, 0); }
+  }
+
+  @media (max-width: 600px) {
+    h1 { font-size: clamp(1.5rem, 7vw, 2rem); }
+    #error { font-size: 0.95rem; line-height: 1.5; overflow-wrap: anywhere; }
+    button { font-size: 1rem; padding: 14px 24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 </style>
 </head>
@@ -205,11 +226,11 @@ function lanzarError() {
 }
 
 function moverBoton() {
-  const maxX = window.innerWidth - boton.offsetWidth - 20;
-  const maxY = window.innerHeight - boton.offsetHeight - 20;
-  boton.style.position = "absolute";
-  boton.style.left = Math.random() * maxX + "px";
-  boton.style.top = Math.random() * maxY + "px";
+  const maxX = Math.max(10, window.innerWidth - boton.offsetWidth - 20);
+  const maxY = Math.max(10, window.innerHeight - boton.offsetHeight - 20);
+  boton.style.position = "fixed";
+  boton.style.left = (10 + Math.random() * Math.max(0, maxX - 10)) + "px";
+  boton.style.top = (10 + Math.random() * Math.max(0, maxY - 10)) + "px";
 }
 
 function barraCarga() {
@@ -264,8 +285,8 @@ function romperBoton() {
     left: '50%',
     top: '60%',
     transform: 'translate(-50%, -50%)',
-    width: '500px',
-    height: '100px',
+    width: 'min(500px, calc(100vw - 24px))',
+    height: 'clamp(76px, 18vw, 100px)',
     border: '2px dashed rgba(0,255,255,0.25)',
     borderRadius: '16px',
     display: 'flex',
@@ -285,10 +306,16 @@ function romperBoton() {
   const letras = palabra.split('');
   const guiaRect = zonaGuia.getBoundingClientRect();
   const guiaCenterY = guiaRect.top + window.scrollY + guiaRect.height / 2;
-  const totalAncho = letras.length * 40 + (letras.length - 1) * 10;
-  const inicioX = guiaRect.left + window.scrollX + (guiaRect.width - totalAncho) / 2;
+  const separacion = window.innerWidth <= 480 ? 2 : 8;
+  const anchoLetra = Math.min(40, (guiaRect.width - (letras.length - 1) * separacion) / letras.length);
+  const totalAncho = letras.length * anchoLetra + (letras.length - 1) * separacion;
+  const inicioX = guiaRect.left + (guiaRect.width - totalAncho) / 2;
 
-  const posicionesMeta = letras.map((letra, i) => ({ letra, x: inicioX + i * 50 + 20, y: guiaCenterY }));
+  const posicionesMeta = letras.map((letra, i) => ({
+    letra,
+    x: inicioX + i * (anchoLetra + separacion) + anchoLetra / 2,
+    y: guiaCenterY
+  }));
 
   const piezas = [];
   letras.forEach((letra) => {
@@ -296,13 +323,14 @@ function romperBoton() {
     span.textContent = letra;
     Object.assign(span.style, {
       position: 'absolute',
-      fontSize: '2.4rem',
+      fontSize: 'clamp(1.35rem, 7vw, 2.4rem)',
       fontWeight: '700',
       color: '#00ffff',
-      left: `${Math.random() * (window.innerWidth - 100)}px`,
-      top: `${100 + Math.random() * (window.innerHeight - 220)}px`,
+      left: `${Math.max(4, Math.random() * (window.innerWidth - 56))}px`,
+      top: `${Math.max(90, 100 + Math.random() * Math.max(0, window.innerHeight - 180))}px`,
       cursor: 'grab',
       userSelect: 'none',
+      touchAction: 'none',
       textAlign: 'center',
       transition: 'transform 120ms, color 120ms',
       zIndex: 1200
@@ -320,55 +348,68 @@ function romperBoton() {
   document.head.appendChild(styleTag);
 
   let piezaActiva = null, offsetX = 0, offsetY = 0;
+  let pointerActivo = null;
 
   piezas.forEach(pieza => {
-    pieza.addEventListener('mousedown', e => {
+    pieza.addEventListener('pointerdown', e => {
+      e.preventDefault();
       piezaActiva = pieza;
-      offsetX = e.clientX - pieza.offsetLeft;
-      offsetY = e.clientY - pieza.offsetTop;
+      pointerActivo = e.pointerId;
+      const rect = pieza.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
       pieza.style.cursor = 'grabbing';
+      pieza.setPointerCapture?.(e.pointerId);
       playBeep(350, 0.05);
     });
-
-    document.addEventListener('mouseup', () => {
-      if (!piezaActiva) return;
-      piezaActiva.style.cursor = 'grab';
-      const rect = piezaActiva.getBoundingClientRect();
-      const piezaX = rect.left + rect.width / 2 + window.scrollX;
-      const piezaY = rect.top + rect.height / 2 + window.scrollY;
-      const tolerancia = 60;
-      const metas = posicionesMeta.filter(m => m.letra === piezaActiva.dataset.letra);
-      const meta = metas.find(m => Math.abs(piezaX - m.x) < tolerancia && Math.abs(piezaY - m.y) < tolerancia);
-
-      if (meta) {
-        piezaActiva.classList.add('pieza-snapped');
-        piezaActiva.classList.remove('pieza-near');
-        piezaActiva.style.left = `${meta.x - rect.width / 2}px`;
-        piezaActiva.style.top = `${meta.y - rect.height / 2}px`;
-        playBeep(720, 0.06);
-      } else {
-        piezaActiva.classList.remove('pieza-near');
-      }
-
-      piezaActiva = null;
-      verificarReconstruccion();
-    });
-
-    document.addEventListener('mousemove', e => {
-      if (!piezaActiva) return;
-      const x = e.clientX - offsetX;
-      const y = e.clientY - offsetY;
-      piezaActiva.style.left = `${x}px`;
-      piezaActiva.style.top = `${y}px`;
-      const metas = posicionesMeta.filter(m => m.letra === piezaActiva.dataset.letra);
-      const rect = piezaActiva.getBoundingClientRect();
-      const piezaX = rect.left + rect.width / 2 + window.scrollX;
-      const piezaY = rect.top + rect.height / 2 + window.scrollY;
-      const tolerancia = 60;
-      const meta = metas.find(m => Math.abs(piezaX - m.x) < tolerancia && Math.abs(piezaY - m.y) < tolerancia);
-      if (meta) piezaActiva.classList.add('pieza-near'); else piezaActiva.classList.remove('pieza-near');
-    });
   });
+
+  document.addEventListener('pointermove', e => {
+    if (!piezaActiva || e.pointerId !== pointerActivo) return;
+    e.preventDefault();
+    const x = Math.max(0, Math.min(window.innerWidth - piezaActiva.offsetWidth, e.clientX - offsetX));
+    const y = Math.max(0, Math.min(window.innerHeight - piezaActiva.offsetHeight, e.clientY - offsetY));
+    piezaActiva.style.left = `${x}px`;
+    piezaActiva.style.top = `${y}px`;
+
+    const metas = posicionesMeta.filter(m => m.letra === piezaActiva.dataset.letra);
+    const rect = piezaActiva.getBoundingClientRect();
+    const piezaX = rect.left + rect.width / 2;
+    const piezaY = rect.top + rect.height / 2;
+    const tolerancia = window.innerWidth <= 480 ? 42 : 60;
+    const meta = metas.find(m => Math.abs(piezaX - m.x) < tolerancia && Math.abs(piezaY - m.y) < tolerancia);
+    if (meta) piezaActiva.classList.add('pieza-near');
+    else piezaActiva.classList.remove('pieza-near');
+  }, { passive: false });
+
+  function soltarPieza(e) {
+    if (!piezaActiva || (e.pointerId !== undefined && e.pointerId !== pointerActivo)) return;
+    const pieza = piezaActiva;
+    pieza.style.cursor = 'grab';
+    const rect = pieza.getBoundingClientRect();
+    const piezaX = rect.left + rect.width / 2;
+    const piezaY = rect.top + rect.height / 2;
+    const tolerancia = window.innerWidth <= 480 ? 42 : 60;
+    const metas = posicionesMeta.filter(m => m.letra === pieza.dataset.letra);
+    const meta = metas.find(m => Math.abs(piezaX - m.x) < tolerancia && Math.abs(piezaY - m.y) < tolerancia);
+
+    if (meta) {
+      pieza.classList.add('pieza-snapped');
+      pieza.classList.remove('pieza-near');
+      pieza.style.left = `${meta.x - rect.width / 2}px`;
+      pieza.style.top = `${meta.y - rect.height / 2}px`;
+      playBeep(720, 0.06);
+    } else {
+      pieza.classList.remove('pieza-near');
+    }
+
+    piezaActiva = null;
+    pointerActivo = null;
+    verificarReconstruccion();
+  }
+
+  document.addEventListener('pointerup', soltarPieza);
+  document.addEventListener('pointercancel', soltarPieza);
 
   function verificarReconstruccion() {
     const completadas = piezas.filter(p => p.classList.contains('pieza-snapped')).length;
@@ -400,13 +441,18 @@ function eventoTresBotones() {
   `;
 
   const contenedor = document.createElement("div");
-  Object.assign(contenedor.style, { display: "flex", justifyContent: "center", gap: "40px", marginTop: "40px" });
+  Object.assign(contenedor.style, {
+    display: "flex", justifyContent: "center", alignItems: "center",
+    flexWrap: "wrap", gap: "clamp(12px, 4vw, 40px)",
+    margin: "40px auto 0", padding: "0 12px", maxWidth: "100%"
+  });
 
   const correcto = Math.floor(Math.random() * 3);
   for (let i = 0; i < 3; i++) {
     const b = document.createElement("button");
     b.textContent = "Continuar";
-    b.style.padding = "15px 40px";
+    b.style.padding = "15px 24px";
+    b.style.minWidth = "min(150px, 42vw)";
     b.addEventListener("click", () => {
       if (i === correcto) {
         playBeep(600, 0.2);

@@ -5,14 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Zona Oscura</title>
 <style>
+  * { box-sizing: border-box; }
+
   html, body {
     margin: 0;
+    width: 100%;
+    min-height: 100%;
     height: 100%;
     overflow: hidden;
     background: #000;
     color: #0ff;
     font-family: 'Courier New', monospace;
     cursor: none;
+    touch-action: manipulation;
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    html, body { cursor: auto; }
   }
 
   body {
@@ -26,7 +35,7 @@
     inset: 0;
     pointer-events: none;
     background: radial-gradient(
-      circle 130px at var(--x, 50%) var(--y, 50%),
+      circle var(--radio-linterna, 130px) at var(--x, 50%) var(--y, 50%),
       rgba(255, 255, 200, 0.2) 0%,
       rgba(0, 0, 0, 0.96) 80%
     );
@@ -42,7 +51,9 @@
     text-align: center;
     color: #0ff;
     text-shadow: 0 0 10px #00ffff, 0 0 20px #00cccc;
-    font-size: 1.5rem;
+    font-size: clamp(1.05rem, 5vw, 1.5rem);
+    padding: 0 16px;
+    line-height: 1.5;
     z-index: 5;
     pointer-events: none;
   }
@@ -54,8 +65,12 @@
     color: #fff;
     border: none;
     padding: 1rem 2rem;
+    min-width: 120px;
+    min-height: 48px;
+    max-width: calc(100vw - 32px);
     border-radius: 10px;
     font-size: 1rem;
+    touch-action: manipulation;
     cursor: pointer;
     z-index: 1;
     opacity: 0;             /* Invisible por defecto */
@@ -74,6 +89,12 @@
     transform: scale(1.05);
     box-shadow: 0 0 20px #00ffccaa;
   }
+
+  @media (max-width: 600px) {
+    body::after { --radio-linterna: 105px; }
+    h1 { top: 8%; }
+    #encender { padding: 14px 24px; }
+  }
 </style>
 </head>
 <body>
@@ -85,29 +106,38 @@
 
     // Coloca el botón en una posición aleatoria al cargar
     function colocarBoton() {
-      const x = Math.random() * (window.innerWidth - btn.offsetWidth);
-      const y = Math.random() * (window.innerHeight - btn.offsetHeight);
+      const margen = 12;
+      const x = margen + Math.random() * Math.max(0, window.innerWidth - btn.offsetWidth - margen * 2);
+      const yMin = Math.min(window.innerHeight * 0.25, 140);
+      const y = yMin + Math.random() * Math.max(0, window.innerHeight - btn.offsetHeight - yMin - margen);
       btn.style.left = `${x}px`;
       btn.style.top = `${y}px`;
     }
     colocarBoton();
 
-    // Efecto de linterna que sigue el cursor
-    document.addEventListener('mousemove', e => {
+    // Linterna controlada con mouse o dedo (Pointer Events).
+    function moverLinterna(e) {
       document.body.style.setProperty('--x', `${e.clientX}px`);
       document.body.style.setProperty('--y', `${e.clientY}px`);
 
-      // Detectar si el cursor está cerca del botón para "revelarlo"
       const rect = btn.getBoundingClientRect();
+      const margen = window.matchMedia('(pointer: coarse)').matches ? 125 : 100;
       const dentro =
-        e.clientX > rect.left - 100 &&
-        e.clientX < rect.right + 100 &&
-        e.clientY > rect.top - 100 &&
-        e.clientY < rect.bottom + 100;
+        e.clientX > rect.left - margen &&
+        e.clientX < rect.right + margen &&
+        e.clientY > rect.top - margen &&
+        e.clientY < rect.bottom + margen;
 
       if (dentro) btn.classList.add('visible');
       else btn.classList.remove('visible');
-    });
+    }
+
+    document.addEventListener('pointermove', moverLinterna, { passive: true });
+    document.addEventListener('pointerdown', e => {
+      moverLinterna(e);
+      // En pantallas táctiles, mantener visible el botón al tocar cerca.
+      if (e.pointerType === 'touch') btn.classList.add('visible');
+    }, { passive: true });
 
     // Sonido de encendido
     function sonidoEncendido() {

@@ -14,7 +14,11 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      min-height: 100vh;
+       min-height: 100svh;
+       height: auto;
+       padding: 24px 16px;
+       margin: 0;
       text-align: center;
     }
 
@@ -71,7 +75,13 @@
       transform: scale(1.05);
     }
 
-  </style>
+  
+/* Adaptación móvil */
+*{box-sizing:border-box}html{width:100%;min-height:100%;}body{max-width:100%;}button{touch-action:manipulation;min-height:46px}canvas{max-width:calc(100vw - 20px);height:auto;touch-action:none}h1{font-size:clamp(1.05rem,4.8vw,2rem);padding:0 10px;line-height:1.3}.mobile-controls{display:none;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin:8px auto 14px;max-width:480px;user-select:none}.mobile-controls button{min-width:64px;min-height:56px;background:#07363b;border:2px solid #00ffff;color:#00ffff;border-radius:12px;font-size:1.3rem;font-weight:bold;touch-action:none;-webkit-user-select:none;user-select:none}.mobile-controls button:active{background:#00ffff;color:#000}.dpad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,56px);gap:6px;justify-content:center}.dpad [data-key="ArrowUp"]{grid-column:2;grid-row:1}.dpad [data-key="ArrowLeft"]{grid-column:1;grid-row:2}.dpad [data-key="ArrowDown"]{grid-column:2;grid-row:2}.dpad [data-key="ArrowRight"]{grid-column:3;grid-row:2}
+@media(hover:none),(pointer:coarse){.mobile-controls{display:flex}}
+@media(max-width:650px){body{overflow-x:hidden!important;overflow-y:auto!important}#gameCanvas,canvas#game{display:block;margin:8px auto!important}#continueBtn{max-width:calc(100vw - 24px)}.mobile-controls{display:flex}h1{margin:8px 0!important}}
+@media(max-width:600px){h1{font-size:1.7rem}p{max-width:100%;line-height:1.5}.eventos{width:min(100%,320px);margin-top:20px}.eventos button{width:100%;min-height:48px}.btn{margin-top:14px}}
+</style>
 </head>
 <body>
 
@@ -88,16 +98,14 @@
     <button onclick="go('laberinto.html')">Laberinto</button>
     <button onclick="go('frogger.html')">Frogger</button>
     <button onclick="go('snake.html')">Snake</button>
-    <button onclick="go('space_invaders.html')">Space Invaders</button>
+    <button onclick="go('space-invaders.html')">Space Invaders</button>
     <button onclick="go('asteroids.html')">Asteroids</button>
-    <button onclick="go('boton_roto.html')">Botón Roto</button>
+    <button onclick="go('error de interaccion 6.html')">Botón Roto</button>
   </div>
 
   <script>
-    // 🔒 BLOQUEO AUTOMÁTICO: Solo se puede entrar si unlockedMenu = true
-    if (localStorage.getItem("unlockedMenu") !== "true") {
-      window.location.href = "index.html";
-    }
+    // El menú es accesible directamente. El premio sigue registrando
+    // unlockedMenu para las funciones que dependan de ese progreso.
 
     function irAContinuar() {
       window.location.href = "error de interaccion 6.html";
